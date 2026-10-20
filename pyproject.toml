@@ -1,0 +1,36 @@
+[project]
+name = "smart-building-lakehouse"
+version = "0.1.0"
+description = "Medallion (bronze/silver/gold) lakehouse on Databricks for smart-building energy and weather data."
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Local development only. On Databricks, Spark and Delta are provided by the runtime.
+# delta-spark 4.0.x is built for Spark 4.0.x, so both are pinned together.
+dev = [
+    "pyspark==4.0.1",
+    "delta-spark==4.0.1",
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

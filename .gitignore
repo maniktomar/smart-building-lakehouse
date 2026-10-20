@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Local Spark / Delta output from tests
+spark-warehouse/
+metastore_db/
+derby.log
+tmp/
+
+# Downloaded source data: large, and re-creatable with scripts/ (see docs/data-sources.md)
+data/raw/
+data/landing/
+
+# Databricks Asset Bundles local state
+.databricks/
+
+# Secrets
+.env
+.databrickscfg

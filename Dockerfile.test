@@ -1,0 +1,26 @@
+# Linux test runner for local development on Windows.
+# PySpark on Windows needs Hadoop's winutils.exe; running the tests in Linux avoids that.
+# Usage:
+#   docker build -f Dockerfile.test -t sbl-test .
+#   docker run --rm sbl-test
+# Debian 12 (bookworm) still packages Java 17; newer Debian only ships Java 21.
+FROM python:3.11-slim-bookworm
+
+# Spark 4 needs Java 17.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openjdk-17-jre-headless \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install dependencies first so Docker caches this layer between code changes.
+COPY pyproject.toml ./
+COPY src/sbl/__init__.py src/sbl/__init__.py
+RUN pip install --no-cache-dir -e ".[dev]"
+
+# Download the Delta Lake jars once at build time, so test runs work offline.
+RUN python -c "from delta import configure_spark_with_delta_pip; from pyspark.sql import SparkSession; \
+configure_spark_with_delta_pip(SparkSession.builder.master('local[1]')).getOrCreate().stop()"
+
+COPY . .
+CMD ["sh", "-c", "ruff check . && pytest -q"]
