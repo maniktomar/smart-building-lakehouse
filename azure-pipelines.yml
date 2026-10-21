@@ -1,0 +1,65 @@
+# Azure DevOps equivalent of .github/workflows/ci.yml + release.yml.
+# STATUS: written but NOT run. A new Azure DevOps organisation needs a free-parallelism grant
+# before Microsoft-hosted agents will run it (see docs/runbook.md, "Azure DevOps").
+
+trigger:
+  branches:
+    include: [main]
+  tags:
+    include: ["v*"]
+
+pr:
+  branches:
+    include: [main]
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  PIP_CACHE_DIR: $(Pipeline.Workspace)/.pip
+
+stages:
+  - stage: test
+    jobs:
+      - job: test
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.11"
+
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: "17"
+              jdkArchitectureOption: x64
+              jdkSourceOption: PreInstalled
+
+          - script: pip install -e ".[dev]"
+            displayName: Install
+
+          - script: ruff check .
+            displayName: Lint
+
+          - script: sbl-validate-config
+            displayName: Validate config
+
+          - script: pytest -q --junitxml=test-results.xml
+            displayName: Tests
+
+          - task: PublishTestResults@2
+            condition: always()
+            inputs:
+              testResultsFiles: test-results.xml
+
+  - stage: release
+    dependsOn: test
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    jobs:
+      - job: build_wheel
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.11"
+          - script: pip install build && python -m build --wheel
+            displayName: Build wheel
+          - publish: dist
+            artifact: wheel
