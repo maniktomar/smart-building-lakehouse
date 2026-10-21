@@ -27,3 +27,7 @@ Sources: [Free Edition limitations (Databricks docs)](https://docs.databricks.co
 |---|---|---|
 | PySpark on native Windows | **Failed**: needs Hadoop `winutils.exe` (`HADOOP_HOME and hadoop.home.dir are unset`) | 2026-10-20 |
 | PySpark 4.0.1 + delta-spark 4.0.1 in Docker (`Dockerfile.test`) | **Passed**: Delta write, `MERGE INTO` and time travel (`tests/test_smoke.py`) | 2026-10-20 |
+| Full test suite (56 tests) in Docker and on GitHub Actions | **Passed** | 2026-10-21 |
+| Full pipeline on real data, local Spark + Delta in Docker | **Passed**: see `docs/run-results.md` | 2026-10-21 |
+
+Nothing in the first table has been verified in a Databricks workspace yet.
