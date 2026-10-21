@@ -224,7 +224,8 @@ long runs of zero readings in the source.
 | Pipeline end to end on real data (local Spark + Delta) | ✅ ran, see Results |
 | Unit, integration and reconciliation tests | ✅ ran locally in Docker |
 | Delta MERGE, CHECK constraints, time travel, RESTORE | ✅ ran (open-source Delta 4.0) |
-| GitHub Actions CI (lint, config validation, 56 tests) | ✅ green on PR #1 |
+| GitHub Actions CI (lint, config validation, 56 tests) | ✅ green on PR #1 and on `main` |
+| Tag-triggered release (tests, then wheel) | ✅ [v0.1.0](https://github.com/maniktomar/smart-building-lakehouse/releases/tag/v0.1.0) |
 | Open-Meteo API ingestion | ✅ ran (48 real API calls) |
 | Unity Catalog tables, Volume, serverless job, email on failure | ❌ not run: needs a Databricks workspace |
 | Databricks Asset Bundle deploy | ❌ not run (`databricks.yml` written, never validated against a workspace) |
