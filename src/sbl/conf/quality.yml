@@ -1,0 +1,41 @@
+# Data-quality rules, run after gold. Results go to ops.dq_results.
+# severity: error -> the run fails (after all rules are logged); warn -> logged only.
+#
+# Rule types: not_null, unique, range, accepted_values, references, row_count_min,
+#             max_share (share of rows matching `expr` must be <= max_share),
+#             freshness (max(column) must be within max_age_hours of now).
+
+rules:
+  bronze.meter_readings:
+    - {name: ingested_recently, type: freshness, column: _ingested_at, max_age_hours: 48, severity: warn}
+
+  silver.buildings:
+    - {name: building_key_not_null, type: not_null, columns: [building_id], severity: error}
+    - {name: building_key_unique, type: unique, columns: [building_id], severity: error}
+    - {name: floor_area_range, type: range, column: floor_area_sqm, min: 10, max: 500000, severity: error}
+
+  silver.meter_readings:
+    - {name: reading_keys_not_null, type: not_null, columns: [building_id, meter, reading_ts], severity: error}
+    - {name: reading_key_unique, type: unique, columns: [building_id, meter, reading_ts], severity: error}
+    - {name: reading_kwh_range, type: range, column: reading_kwh, min: 0, max: 10000, severity: error}
+    - {name: meter_is_electricity, type: accepted_values, column: meter, values: [electricity], severity: error}
+    - {name: building_exists, type: references, column: building_id, ref_table: silver.buildings, ref_column: building_id, severity: error}
+    - {name: zero_reading_share, type: max_share, expr: "reading_kwh = 0", max_share: 0.25, severity: warn}
+
+  silver.weather_hourly:
+    - {name: weather_keys_not_null, type: not_null, columns: [site_id, observed_ts], severity: error}
+    - {name: weather_key_unique, type: unique, columns: [site_id, observed_ts], severity: error}
+    - {name: temperature_range, type: range, column: temperature_c, min: -40, max: 50, severity: error}
+
+  gold.fact_daily_energy:
+    - {name: fact_keys_not_null, type: not_null, columns: [building_id, date_key], severity: error}
+    - {name: fact_grain_unique, type: unique, columns: [building_id, date_key], severity: error}
+    - {name: fact_building_in_dim, type: references, column: building_id, ref_table: gold.dim_building, ref_column: building_id, severity: error}
+    - {name: fact_date_in_dim, type: references, column: date_key, ref_table: gold.dim_date, ref_column: date_key, severity: error}
+    - {name: fact_has_rows, type: row_count_min, min: 1, severity: error}
+    - {name: incomplete_day_share, type: max_share, expr: "data_quality_flag = 'incomplete'", max_share: 0.30, severity: warn}
+
+# Reconciliation tolerances (see sbl/reconcile.py). Relative difference, so 0.0 = exact match.
+reconciliation:
+  count_tolerance: 0.0
+  sum_tolerance: 0.000001

@@ -1,0 +1,15 @@
+# Local development: open-source Spark + Delta Lake (in Docker), tables stored as Delta folders.
+name: local
+
+# No Unity Catalog locally: tables are addressed by path, delta.`<storage_root>/<schema>/<table>`.
+catalog: null
+storage_root: data/lakehouse
+
+# Raw files land here before bronze ingestion.
+landing_root: data/landing
+
+schemas:
+  bronze: bronze
+  silver: silver
+  gold: gold
+  ops: ops          # audit, quality, reconciliation, quarantine and watermark tables

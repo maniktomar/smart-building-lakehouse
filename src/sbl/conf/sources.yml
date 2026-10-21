@@ -1,0 +1,63 @@
+# Bronze sources. Adding a new file source = adding an entry here (no new code),
+# as long as it uses an existing format (csv, open_meteo_json).
+#
+# columns:       columns we rely on downstream. Each is checked on ingestion:
+#                  required: true -> a missing/empty value sends the row to quarantine
+#                  type          -> a value that cannot be cast sends the row to quarantine
+#                (bronze still stores the raw string; silver does the real cast)
+# schema_drift:  new_columns: add  -> new columns are added to the bronze table (and logged)
+#                new_columns: fail -> the batch fails
+#                a configured column missing from a file always fails the batch.
+
+sources:
+  buildings:
+    description: Building metadata from Building Data Genome Project 2 (subset).
+    format: csv
+    landing_dir: buildings
+    file_glob: "*.csv"
+    bronze_table: buildings
+    schema_drift: {new_columns: add}
+    columns:
+      - {name: building_id, type: string, required: true}
+      - {name: site_id, type: string, required: true}
+      - {name: primaryspaceusage, type: string, required: false}
+      - {name: sqm, type: double, required: true}
+      - {name: lat, type: double, required: true}
+      - {name: lng, type: double, required: true}
+      - {name: timezone, type: string, required: true}
+      - {name: yearbuilt, type: int, required: false}
+
+  meter_readings:
+    description: Hourly electricity meter readings (kWh) from Building Data Genome Project 2, one file per month.
+    format: csv
+    landing_dir: meters
+    file_glob: "*.csv"
+    bronze_table: meter_readings
+    schema_drift: {new_columns: add}
+    columns:
+      - {name: timestamp, type: timestamp, format: "yyyy-MM-dd HH:mm:ss", required: true}
+      - {name: building_id, type: string, required: true}
+      - {name: meter, type: string, required: true}
+      - {name: meter_reading, type: double, required: true}
+
+  weather_hourly:
+    description: Hourly historical weather from the Open-Meteo archive API, one JSON response per site and month.
+    format: open_meteo_json
+    landing_dir: weather
+    file_glob: "**/*.json"
+    bronze_table: weather_hourly
+    schema_drift: {new_columns: add}
+    # site_id is not in the API response; it is taken from the landing path (site_id=<id>/YYYY-MM.json).
+    site_id_path_regex: "site_id=([^/]+)/"
+    columns:
+      - {name: site_id, type: string, required: true}
+      - {name: time, type: timestamp, format: "yyyy-MM-dd'T'HH:mm", required: true}
+      - {name: temperature_2m, type: double, required: true}
+      - {name: relative_humidity_2m, type: double, required: false}
+    api:
+      url: https://archive-api.open-meteo.com/v1/archive
+      hourly_variables: [temperature_2m, relative_humidity_2m]
+      start_month: "2016-01"
+      end_month: "2017-12"
+      # Sites (and their coordinates and timezones) come from silver.buildings.
+      sites_from_silver_table: buildings

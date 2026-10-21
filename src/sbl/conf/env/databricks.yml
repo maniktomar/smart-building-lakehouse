@@ -1,0 +1,16 @@
+# Databricks Free Edition: serverless compute + Unity Catalog.
+name: databricks
+
+# Tables are addressed as <catalog>.<schema>.<table>. If CREATE CATALOG is not allowed in
+# your workspace, set this to the default catalog (usually `workspace`) or pass --catalog.
+catalog: smart_building
+storage_root: null      # Unity Catalog manages table storage
+
+# A Unity Catalog Volume stands in for Azure Data Lake Storage, which Free Edition cannot attach.
+landing_root: /Volumes/{catalog}/bronze/landing
+
+schemas:
+  bronze: bronze
+  silver: silver
+  gold: gold
+  ops: ops
