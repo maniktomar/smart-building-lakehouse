@@ -1,0 +1,18 @@
+# Run order. Each stage is one task in the Databricks job (see databricks.yml).
+# `--stage all` runs them in this order.
+stages:
+  - name: reference_data        # buildings first: the weather extract needs site coordinates
+    bronze: [buildings]
+    silver: [buildings]
+  - name: extract_weather       # API -> landing files
+    extract: [weather_hourly]
+  - name: bronze
+    bronze: [meter_readings, weather_hourly]
+  - name: silver
+    silver: [meter_readings, weather_hourly]
+  - name: gold
+    gold: true
+  - name: quality
+    quality: true
+  - name: reconcile
+    reconcile: true

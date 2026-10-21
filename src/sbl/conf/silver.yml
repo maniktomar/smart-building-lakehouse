@@ -1,0 +1,50 @@
+# Silver tables: cleaned, typed, deduplicated, upserted with MERGE on `keys`.
+# Adding a new silver table = adding an entry here (no new code).
+#
+# columns:      <silver column>: {from: <bronze column>, type: <string|double|int|timestamp>, format: ...}
+# keys:         business key used for deduplication and MERGE
+# constraints:  Delta CHECK constraints added to the table (writes that break them fail)
+# Incremental:  only bronze rows with _ingested_at > the table's watermark are processed.
+
+silver:
+  buildings:
+    source: buildings
+    description: One row per building with typed attributes (SCD type 1, latest wins).
+    keys: [building_id]
+    columns:
+      building_id: {from: building_id, type: string}
+      site_id: {from: site_id, type: string}
+      primary_use: {from: primaryspaceusage, type: string}
+      floor_area_sqm: {from: sqm, type: double}
+      latitude: {from: lat, type: double}
+      longitude: {from: lng, type: double}
+      timezone: {from: timezone, type: string}
+      year_built: {from: yearbuilt, type: int}
+    constraints:
+      floor_area_positive: "floor_area_sqm > 0"
+      latitude_valid: "latitude BETWEEN -90 AND 90"
+      longitude_valid: "longitude BETWEEN -180 AND 180"
+
+  meter_readings:
+    source: meter_readings
+    description: One row per building, meter and hour. Timestamps are site-local wall-clock time.
+    keys: [building_id, meter, reading_ts]
+    columns:
+      reading_ts: {from: timestamp, type: timestamp, format: "yyyy-MM-dd HH:mm:ss"}
+      building_id: {from: building_id, type: string}
+      meter: {from: meter, type: string}
+      reading_kwh: {from: meter_reading, type: double}
+    constraints:
+      reading_not_negative: "reading_kwh >= 0"
+
+  weather_hourly:
+    source: weather_hourly
+    description: One row per site and hour. Timestamps are site-local wall-clock time.
+    keys: [site_id, observed_ts]
+    columns:
+      site_id: {from: site_id, type: string}
+      observed_ts: {from: time, type: timestamp, format: "yyyy-MM-dd'T'HH:mm"}
+      temperature_c: {from: temperature_2m, type: double}
+      relative_humidity_pct: {from: relative_humidity_2m, type: double}
+    constraints:
+      temperature_plausible: "temperature_c BETWEEN -60 AND 60"
